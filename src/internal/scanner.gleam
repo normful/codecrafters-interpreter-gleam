@@ -10,6 +10,14 @@ pub type TokenType {
   LeftBrace
   RightBrace
 
+  Comma
+  Dot
+  Minus
+  Plus
+  Semicolon
+  Slash
+  Star
+
   EndOfFile
   Unknown
 }
@@ -18,8 +26,18 @@ fn token_type_to_string(token_type: TokenType) -> String {
   case token_type {
     LeftParen -> "LEFT_PAREN"
     RightParen -> "RIGHT_PAREN"
+
     LeftBrace -> "LEFT_BRACE"
     RightBrace -> "RIGHT_BRACE"
+
+    Comma -> "COMMA"
+    Dot -> "DOT"
+    Minus -> "MINUS"
+    Plus -> "PLUS"
+    Semicolon -> "SEMICOLON"
+    Slash -> "SLASH"
+    Star -> "STAR"
+
     EndOfFile -> "EOF"
     Unknown -> "unknown token"
   }
@@ -63,7 +81,13 @@ fn grapheme_to_token(grapheme: String) -> Token {
     ")" -> Token(token_type: RightParen, lexeme: ")", line: line_number_todo, literal: None)
     "{" -> Token(token_type: LeftBrace, lexeme: "{", line: line_number_todo, literal: None)
     "}" -> Token(token_type: RightBrace, lexeme: "}", line: line_number_todo, literal: None)
+    "," -> Token(token_type: Comma, lexeme: ",", line: line_number_todo, literal: None)
+    "." -> Token(token_type: Dot, lexeme: ".", line: line_number_todo, literal: None)
+    "-" -> Token(token_type: Minus, lexeme: "-", line: line_number_todo, literal: None)
+    "+" -> Token(token_type: Plus, lexeme: "+", line: line_number_todo, literal: None)
+    ";" -> Token(token_type: Semicolon, lexeme: ";", line: line_number_todo, literal: None)
+    "*" -> Token(token_type: Star, lexeme: "*", line: line_number_todo, literal: None)
+    "/" -> Token(token_type: Slash, lexeme: "/", line: line_number_todo, literal: None)
     _ -> Token(token_type: Unknown, lexeme: "", line: line_number_todo, literal: None)
   }
 }
-
