@@ -7,6 +7,7 @@
 # Learn more: https://codecrafters.io/program-interface
 
 set -e # Exit on failure
+set -o pipefail
 
 # TODO: Use --no-print-progress once https://github.com/gleam-lang/gleam/issues/2299 is implemented
 exec gleam run --module main -- "$@" | grep -v "Compiled in" | grep -v "Running main.main"
