@@ -1,13 +1,11 @@
 import gleam/io
 import gleam/string
+import internal/scanner
 
 import argv
 import simplifile
 
 pub fn main() {
-  // You can use print statements as follows for debugging, they'll be visible when running tests.
-  io.println_error("Logs from your program will appear here!")
-
   let args = argv.load().arguments
 
   case args {
@@ -16,7 +14,7 @@ pub fn main() {
         Ok(contents) -> {
           case string.length(contents) {
             0 -> io.println("EOF  null")
-            _ -> io.println_error("TODO: Implement scanner!")
+            _ -> scanner.print_tokens(scanner.scan_tokens(contents))
           }
         }
         Error(error) -> {
