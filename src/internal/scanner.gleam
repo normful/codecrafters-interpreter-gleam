@@ -6,6 +6,10 @@ import gleam/string
 pub type TokenType {
   LeftParen
   RightParen
+
+  LeftBrace
+  RightBrace
+
   EndOfFile
   Unknown
 }
@@ -14,6 +18,8 @@ fn token_type_to_string(token_type: TokenType) -> String {
   case token_type {
     LeftParen -> "LEFT_PAREN"
     RightParen -> "RIGHT_PAREN"
+    LeftBrace -> "LEFT_BRACE"
+    RightBrace -> "RIGHT_BRACE"
     EndOfFile -> "EOF"
     Unknown -> "unknown token"
   }
@@ -55,6 +61,8 @@ fn grapheme_to_token(grapheme: String) -> Token {
   case grapheme {
     "(" -> Token(token_type: LeftParen, lexeme: "(", line: line_number_todo, literal: None)
     ")" -> Token(token_type: RightParen, lexeme: ")", line: line_number_todo, literal: None)
+    "{" -> Token(token_type: LeftBrace, lexeme: "{", line: line_number_todo, literal: None)
+    "}" -> Token(token_type: RightBrace, lexeme: "}", line: line_number_todo, literal: None)
     _ -> Token(token_type: Unknown, lexeme: "", line: line_number_todo, literal: None)
   }
 }
