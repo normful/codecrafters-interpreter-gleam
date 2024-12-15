@@ -22,20 +22,20 @@ import internal/scanner.{
   GreaterEqual,
   EndOfFile,
   Unexpected,
-  scan_tokens,
+  scan,
   is_unexpected_token,
 }
 import gleam/option.{None}
 
 pub fn empty_string_test() {
-  scan_tokens("")
+  scan("")
   |> should.equal([
     Token(EndOfFile, "", 1, None)
   ])
 }
 
 pub fn one_left_paren_test() {
-  scan_tokens("(")
+  scan("(")
   |> should.equal([
     Token(LeftParen, "(", 1, None),
     Token(EndOfFile, "", 1, None)
@@ -43,7 +43,7 @@ pub fn one_left_paren_test() {
 }
 
 pub fn two_left_parens_test() {
-  scan_tokens("((")
+  scan("((")
   |> should.equal([
     Token(LeftParen, "(", 1, None),
     Token(LeftParen, "(", 1, None),
@@ -52,7 +52,7 @@ pub fn two_left_parens_test() {
 }
 
 pub fn parens_pair_test() {
-  scan_tokens("()")
+  scan("()")
   |> should.equal([
     Token(LeftParen, "(", 1, None),
     Token(RightParen, ")", 1, None),
@@ -61,7 +61,7 @@ pub fn parens_pair_test() {
 }
 
 pub fn braces_pair_test() {
-  scan_tokens("{}")
+  scan("{}")
   |> should.equal([
     Token(LeftBrace, "{", 1, None),
     Token(RightBrace, "}", 1, None),
@@ -70,7 +70,7 @@ pub fn braces_pair_test() {
 }
 
 pub fn punctuation1_test() {
-  scan_tokens("({*.,+*})")
+  scan("({*.,+*})")
   |> should.equal([
     Token(LeftParen, "(", 1, None),
     Token(LeftBrace, "{", 1, None),
@@ -86,7 +86,7 @@ pub fn punctuation1_test() {
 }
 
 pub fn punctuation2_test() {
-  scan_tokens("-/;")
+  scan("-/;")
   |> should.equal([
     Token(Minus, "-", 1, None),
     Token(Slash, "/", 1, None),
@@ -96,7 +96,7 @@ pub fn punctuation2_test() {
 }
 
 pub fn unexpected_lexeme_test() {
-  scan_tokens("@")
+  scan("@")
   |> should.equal([
     Token(Unexpected, "@", 1, None),
     Token(EndOfFile, "", 1, None),
@@ -109,7 +109,7 @@ pub fn is_unexpected_token_test() {
 }
 
 pub fn equal_equal_test() {
-  scan_tokens("==")
+  scan("==")
   |> should.equal([
     Token(EqualEqual, "==", 1, None),
     Token(EndOfFile, "", 1, None)
@@ -117,7 +117,7 @@ pub fn equal_equal_test() {
 }
 
 pub fn equal_equal_equal_test() {
-  scan_tokens("===")
+  scan("===")
   |> should.equal([
     Token(EqualEqual, "==", 1, None),
     Token(Equal, "=", 1, None),
@@ -126,7 +126,7 @@ pub fn equal_equal_equal_test() {
 }
 
 pub fn equal_equal_equal_equal_test() {
-  scan_tokens("====")
+  scan("====")
   |> should.equal([
     Token(EqualEqual, "==", 1, None),
     Token(EqualEqual, "==", 1, None),
@@ -135,7 +135,7 @@ pub fn equal_equal_equal_equal_test() {
 }
 
 pub fn unexpected_with_equal_equal_test() {
-  scan_tokens("((%@$==#))")
+  scan("((%@$==#))")
   |> should.equal([
     Token(LeftParen, "(", 1, None),
     Token(LeftParen, "(", 1, None),
@@ -151,7 +151,7 @@ pub fn unexpected_with_equal_equal_test() {
 }
 
 pub fn negation_and_equality_test() {
-  scan_tokens("!!===")
+  scan("!!===")
   |> should.equal([
     Token(Bang, "!", 1, None),
     Token(BangEqual, "!=", 1, None),
@@ -161,7 +161,7 @@ pub fn negation_and_equality_test() {
 }
 
 pub fn lte_gte_test() {
-  scan_tokens("<<=>>=")
+  scan("<<=>>=")
   |> should.equal([
     Token(Less, "<", 1, None),
     Token(LessEqual, "<=", 1, None),

@@ -4,6 +4,10 @@ import gleam/io
 import gleam/string
 import gleam/int
 
+pub type Token {
+  Token(token_type: TokenType, lexeme: String, line: Int, literal: Option(Literal))
+}
+
 pub type TokenType {
   LeftParen
   RightParen
@@ -54,6 +58,13 @@ fn token_type_to_string(token_type: TokenType) -> String {
   }
 }
 
+pub fn is_unexpected_token(token: Token) -> Bool {
+  case token {
+    Token(token_type: Unexpected, ..) -> True
+    _ -> False
+  }
+}
+
 pub type Literal {
   StringLiteral
   NumberLiteral
@@ -66,16 +77,12 @@ fn token_literal_to_string(lit: Option(Literal)) -> String {
   }
 }
 
-pub type Token {
-  Token(token_type: TokenType, lexeme: String, line: Int, literal: Option(Literal))
-}
-
 pub fn print_tokens(tokens: List(Token)) -> Nil {
   tokens |> list.each(fn(token) {
     case token {
-      Token(token_type: Unexpected, line: line, lexeme: lexeme, ..) -> {
+      Token(token_type: Unexpected, line: line_num, lexeme: lexeme, ..) -> {
         io.println_error(
-        "[line " <> int.to_string(line) <>
+        "[line " <> int.to_string(line_num) <>
           "] Error: Unexpected character: " <> lexeme)
       }
       _ -> {
@@ -85,13 +92,6 @@ pub fn print_tokens(tokens: List(Token)) -> Nil {
       }
     }
   })
-}
-
-pub fn is_unexpected_token(token: Token) -> Bool {
-  case token {
-    Token(token_type: Unexpected, ..) -> True
-    _ -> False
-  }
 }
 
 fn map_single(grapheme: String, line_num: Int) -> List(Token) {
@@ -131,26 +131,28 @@ fn map_double(grapheme_1: String, grapheme_2: String, line_num: Int) -> List(Tok
   }
 }
 
-pub fn scan_tokens(contents: String) -> List(Token) {
+pub fn scan(contents: String) -> List(Token) {
   scan_loop(contents, [], 1)
 }
 
-fn scan_loop(rest: String, tokens: List(Token), line_num: Int) -> List(Token) {
+fn scan_loop(remaining: String, tokens: List(Token), line_num: Int) -> List(Token) {
   let eof_token = [Token(token_type: EndOfFile, lexeme: "", line: line_num, literal: None)]
 
-  case string.pop_grapheme(rest) {
+  case string.pop_grapheme(remaining) {
     Ok(#("!", tail_1)) -> case string.pop_grapheme(tail_1) {
       Ok(#("=", tail_2)) -> scan_loop(
         tail_2,
         tokens |> list.append(map_double("!", "=", line_num)),
         line_num
       )
-      Ok(#(_head_2, _tail_2)) -> scan_loop(
+      Ok(#(_, _)) -> scan_loop(
         tail_1,
         tokens |> list.append(map_single("!", line_num)),
         line_num
       )
-      Error(Nil) -> tokens |> list.append(map_single("!", line_num)) |> list.append(eof_token)
+      Error(Nil) -> tokens
+        |> list.append(map_single("!", line_num))
+        |> list.append(eof_token)
     }
     Ok(#("=", tail_1)) -> case string.pop_grapheme(tail_1) {
       Ok(#("=", tail_2)) -> scan_loop(
@@ -158,12 +160,14 @@ fn scan_loop(rest: String, tokens: List(Token), line_num: Int) -> List(Token) {
         tokens |> list.append(map_double("=", "=", line_num)),
         line_num
       )
-      Ok(#(_head_2, _tail_2)) -> scan_loop(
+      Ok(#(_, _)) -> scan_loop(
         tail_1,
         tokens |> list.append(map_single("=", line_num)),
         line_num
       )
-      Error(Nil) -> tokens |> list.append(map_single("=", line_num)) |> list.append(eof_token)
+      Error(Nil) -> tokens
+        |> list.append(map_single("=", line_num))
+        |> list.append(eof_token)
     }
     Ok(#(">", tail_1)) -> case string.pop_grapheme(tail_1) {
       Ok(#("=", tail_2)) -> scan_loop(
@@ -171,12 +175,14 @@ fn scan_loop(rest: String, tokens: List(Token), line_num: Int) -> List(Token) {
         tokens |> list.append(map_double(">", "=", line_num)),
         line_num
       )
-      Ok(#(_head_2, _tail_2)) -> scan_loop(
+      Ok(#(_, _)) -> scan_loop(
         tail_1,
         tokens |> list.append(map_single(">", line_num)),
         line_num
       )
-      Error(Nil) -> tokens |> list.append(map_single(">", line_num)) |> list.append(eof_token)
+      Error(Nil) -> tokens
+        |> list.append(map_single(">", line_num))
+        |> list.append(eof_token)
     }
     Ok(#("<", tail_1)) -> case string.pop_grapheme(tail_1) {
       Ok(#("=", tail_2)) -> scan_loop(
@@ -184,18 +190,21 @@ fn scan_loop(rest: String, tokens: List(Token), line_num: Int) -> List(Token) {
         tokens |> list.append(map_double("<", "=", line_num)),
         line_num
       )
-      Ok(#(_head_2, _tail_2)) -> scan_loop(
+      Ok(#(_, _)) -> scan_loop(
         tail_1,
         tokens |> list.append(map_single("<", line_num)),
         line_num
       )
-      Error(Nil) -> tokens |> list.append(map_single("<", line_num)) |> list.append(eof_token)
+      Error(Nil) -> tokens
+        |> list.append(map_single("<", line_num))
+        |> list.append(eof_token)
     }
-    Ok(#(head, tail)) -> scan_loop(
-      tail,
-      tokens |> list.append(map_single(head, line_num)),
+    Ok(#(head_1, tail_1)) -> scan_loop(
+      tail_1,
+      tokens |> list.append(map_single(head_1, line_num)),
       line_num
     )
-    Error(Nil) -> tokens |> list.append(eof_token)
+    Error(Nil) -> tokens
+      |> list.append(eof_token)
   }
 }

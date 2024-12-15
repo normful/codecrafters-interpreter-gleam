@@ -12,7 +12,7 @@ pub fn main() {
     ["tokenize", filename] -> {
       case simplifile.read(filename) {
         Ok(contents) -> {
-          let tokens = scanner.scan_tokens(contents)
+          let tokens = scanner.scan(contents)
           scanner.print_tokens(tokens)
           let has_unexpected_token = tokens |> list.any(scanner.is_unexpected_token)
           case has_unexpected_token {
