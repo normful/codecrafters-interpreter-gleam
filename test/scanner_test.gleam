@@ -14,6 +14,8 @@ import internal/scanner.{
   Star,
   Equal,
   EqualEqual,
+  Bang,
+  BangEqual,
   EndOfFile,
   Unexpected,
   scan_tokens,
@@ -140,6 +142,16 @@ pub fn unexpected_with_equal_equal_test() {
     Token(Unexpected, "#", 1, None),
     Token(RightParen, ")", 1, None),
     Token(RightParen, ")", 1, None),
+    Token(EndOfFile, "", 1, None)
+  ])
+}
+
+pub fn negation_and_equality_test() {
+  scan_tokens("!!===")
+  |> should.equal([
+    Token(Bang, "!", 1, None),
+    Token(BangEqual, "!=", 1, None),
+    Token(EqualEqual, "==", 1, None),
     Token(EndOfFile, "", 1, None)
   ])
 }
