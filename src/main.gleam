@@ -1,5 +1,5 @@
 import gleam/io
-import gleam/list
+import gleam/yielder
 import internal/scanner
 
 import argv
@@ -14,8 +14,7 @@ pub fn main() {
         Ok(contents) -> {
           let tokens = scanner.scan(contents)
           scanner.print_tokens(tokens)
-          let has_unexpected_token = tokens |> list.any(scanner.is_unexpected_token)
-          case has_unexpected_token {
+          case tokens |> yielder.any(scanner.is_unexpected_token) {
             True -> exit(65)
             False -> exit(0)
           }

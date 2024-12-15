@@ -1,8 +1,8 @@
 import gleam/option.{type Option, None}
-import gleam/list
 import gleam/io
 import gleam/string
 import gleam/int
+import gleam/yielder.{type Yielder}
 
 pub type Token {
   Token(token_type: TokenType, lexeme: String, line: Int, literal: Option(Literal))
@@ -77,8 +77,8 @@ fn token_literal_to_string(lit: Option(Literal)) -> String {
   }
 }
 
-pub fn print_tokens(tokens: List(Token)) -> Nil {
-  tokens |> list.each(fn(token) {
+pub fn print_tokens(tokens: Yielder(Token)) -> Nil {
+  tokens |> yielder.each(fn(token) {
     case token {
       Token(token_type: Unexpected, line: line_num, lexeme: lexeme, ..) -> {
         io.println_error(
@@ -94,117 +94,114 @@ pub fn print_tokens(tokens: List(Token)) -> Nil {
   })
 }
 
-fn map_single(grapheme: String, line_num: Int) -> List(Token) {
-  let token_type = case grapheme {
-    "(" -> LeftParen
-    ")" -> RightParen
-    "{" -> LeftBrace
-    "}" -> RightBrace
-    "," -> Comma
-    "." -> Dot
-    "-" -> Minus
-    "+" -> Plus
-    ";" -> Semicolon
-    "*" -> Star
-    "/" -> Slash
-    "<" -> Less
-    ">" -> Greater
-    "!" -> Bang
-    "=" -> Equal
-    _  -> Unexpected
-  }
-  [Token(
-    token_type: token_type,
-    lexeme: grapheme,
-    line: line_num,
-    literal: None,
-  )]
+fn map_single(grapheme: String, line_num: Int) -> Yielder(Token) {
+  yielder.once(fn() {
+    let token_type = case grapheme {
+      "(" -> LeftParen
+      ")" -> RightParen
+      "{" -> LeftBrace
+      "}" -> RightBrace
+      "," -> Comma
+      "." -> Dot
+      "-" -> Minus
+      "+" -> Plus
+      ";" -> Semicolon
+      "*" -> Star
+      "/" -> Slash
+      "<" -> Less
+      ">" -> Greater
+      "!" -> Bang
+      "=" -> Equal
+      _  -> Unexpected
+    }
+    Token(token_type: token_type, lexeme: grapheme, line: line_num, literal: None)
+  })
 }
 
-fn map_double(grapheme_1: String, grapheme_2: String, line_num: Int) -> List(Token) {
+fn map_double(grapheme_1: String, grapheme_2: String, line_num: Int) -> Yielder(Token) {
   case grapheme_1, grapheme_2 {
-    "<", "=" -> [Token(token_type: LessEqual, lexeme: "<=", line: line_num, literal: None)]
-    ">", "=" -> [Token(token_type: GreaterEqual, lexeme: ">=", line: line_num, literal: None)]
-    "!", "=" -> [Token(token_type: BangEqual, lexeme: "!=", line: line_num, literal: None)]
-    "=", "=" -> [Token(token_type: EqualEqual, lexeme: "==", line: line_num, literal: None)]
-    a, b -> list.append(map_single(a, line_num), map_single(b, line_num))
+    "<", "=" -> yielder.once(fn() { Token(token_type: LessEqual, lexeme: "<=", line: line_num, literal: None) })
+    ">", "=" -> yielder.once(fn() { Token(token_type: GreaterEqual, lexeme: ">=", line: line_num, literal: None) })
+    "!", "=" -> yielder.once(fn() { Token(token_type: BangEqual, lexeme: "!=", line: line_num, literal: None) })
+    "=", "=" -> yielder.once(fn() { Token(token_type: EqualEqual, lexeme: "==", line: line_num, literal: None) })
+    a, b -> yielder.append(map_single(a, line_num), map_single(b, line_num))
   }
 }
 
-pub fn scan(contents: String) -> List(Token) {
-  scan_loop(contents, [], 1)
+pub fn scan(contents: String) -> Yielder(Token) {
+  scan_loop(contents, yielder.empty(), 1)
 }
 
-fn scan_loop(remaining: String, tokens: List(Token), line_num: Int) -> List(Token) {
-  let eof_token = [Token(token_type: EndOfFile, lexeme: "", line: line_num, literal: None)]
+fn scan_loop(remaining: String, tokens: Yielder(Token), line_num: Int) -> Yielder(Token) {
+  let eof_token = yielder.once(fn() { Token(token_type: EndOfFile, lexeme: "", line: line_num, literal: None) })
 
   case string.pop_grapheme(remaining) {
     Ok(#("!", tail_1)) -> case string.pop_grapheme(tail_1) {
       Ok(#("=", tail_2)) -> scan_loop(
         tail_2,
-        tokens |> list.append(map_double("!", "=", line_num)),
+        tokens |> yielder.append(map_double("!", "=", line_num)),
         line_num
       )
       Ok(#(_, _)) -> scan_loop(
         tail_1,
-        tokens |> list.append(map_single("!", line_num)),
+        tokens |> yielder.append(map_single("!", line_num)),
         line_num
       )
       Error(Nil) -> tokens
-        |> list.append(map_single("!", line_num))
-        |> list.append(eof_token)
+        |> yielder.append(map_single("!", line_num))
+        |> yielder.append(eof_token)
     }
     Ok(#("=", tail_1)) -> case string.pop_grapheme(tail_1) {
       Ok(#("=", tail_2)) -> scan_loop(
         tail_2,
-        tokens |> list.append(map_double("=", "=", line_num)),
+        tokens |> yielder.append(map_double("=", "=", line_num)),
         line_num
       )
       Ok(#(_, _)) -> scan_loop(
         tail_1,
-        tokens |> list.append(map_single("=", line_num)),
+        tokens |> yielder.append(map_single("=", line_num)),
         line_num
       )
       Error(Nil) -> tokens
-        |> list.append(map_single("=", line_num))
-        |> list.append(eof_token)
+        |> yielder.append(map_single("=", line_num))
+        |> yielder.append(eof_token)
     }
     Ok(#(">", tail_1)) -> case string.pop_grapheme(tail_1) {
       Ok(#("=", tail_2)) -> scan_loop(
         tail_2,
-        tokens |> list.append(map_double(">", "=", line_num)),
+        tokens |> yielder.append(map_double(">", "=", line_num)),
         line_num
       )
       Ok(#(_, _)) -> scan_loop(
         tail_1,
-        tokens |> list.append(map_single(">", line_num)),
+        tokens |> yielder.append(map_single(">", line_num)),
         line_num
       )
       Error(Nil) -> tokens
-        |> list.append(map_single(">", line_num))
-        |> list.append(eof_token)
+        |> yielder.append(map_single(">", line_num))
+        |> yielder.append(eof_token)
     }
     Ok(#("<", tail_1)) -> case string.pop_grapheme(tail_1) {
       Ok(#("=", tail_2)) -> scan_loop(
         tail_2,
-        tokens |> list.append(map_double("<", "=", line_num)),
+        tokens |> yielder.append(map_double("<", "=", line_num)),
         line_num
       )
       Ok(#(_, _)) -> scan_loop(
         tail_1,
-        tokens |> list.append(map_single("<", line_num)),
+        tokens |> yielder.append(map_single("<", line_num)),
         line_num
       )
       Error(Nil) -> tokens
-        |> list.append(map_single("<", line_num))
-        |> list.append(eof_token)
+        |> yielder.append(map_single("<", line_num))
+        |> yielder.append(eof_token)
     }
     Ok(#(head_1, tail_1)) -> scan_loop(
       tail_1,
-      tokens |> list.append(map_single(head_1, line_num)),
+      tokens |> yielder.append(map_single(head_1, line_num)),
       line_num
     )
     Error(Nil) -> tokens
-      |> list.append(eof_token)
+      |> yielder.append(eof_token)
   }
 }
