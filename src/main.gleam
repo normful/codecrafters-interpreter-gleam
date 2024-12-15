@@ -1,6 +1,6 @@
 import gleam/io
 import gleam/list
-import internal/scanner.{type Token}
+import internal/scanner
 
 import argv
 import simplifile
@@ -14,7 +14,11 @@ pub fn main() {
         Ok(contents) -> {
           let tokens = scanner.scan_tokens(contents)
           scanner.print_tokens(tokens)
-          exit(get_exit_code(tokens))
+          let has_unexpected_token = tokens |> list.any(scanner.is_unexpected_token)
+          case has_unexpected_token {
+            True -> exit(65)
+            False -> exit(0)
+          }
         }
         Error(error) -> {
           io.println_error("Error: " <> simplifile.describe_error(error))
@@ -26,13 +30,6 @@ pub fn main() {
       io.println_error("Usage: ./your_program.sh tokenize <filename>")
       exit(1)
     }
-  }
-}
-
-fn get_exit_code(tokens: List(Token)) -> Int {
-  case tokens |> list.any(scanner.is_unexpected_token) {
-    True -> 65
-    False -> 0
   }
 }
 

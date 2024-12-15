@@ -12,6 +12,8 @@ import internal/scanner.{
   Semicolon,
   Slash,
   Star,
+  Equal,
+  EqualEqual,
   EndOfFile,
   Unexpected,
   scan_tokens,
@@ -98,4 +100,46 @@ pub fn unexpected_lexeme_test() {
 pub fn is_unexpected_token_test() {
   is_unexpected_token(Token(Unexpected, "@", 1, None)) |> should.be_true
   is_unexpected_token(Token(EndOfFile, "", 1, None)) |> should.be_false
+}
+
+pub fn equal_equal_test() {
+  scan_tokens("==")
+  |> should.equal([
+    Token(EqualEqual, "==", 1, None),
+    Token(EndOfFile, "", 1, None)
+  ])
+}
+
+pub fn equal_equal_equal_test() {
+  scan_tokens("===")
+  |> should.equal([
+    Token(EqualEqual, "==", 1, None),
+    Token(Equal, "=", 1, None),
+    Token(EndOfFile, "", 1, None)
+  ])
+}
+
+pub fn equal_equal_equal_equal_test() {
+  scan_tokens("====")
+  |> should.equal([
+    Token(EqualEqual, "==", 1, None),
+    Token(EqualEqual, "==", 1, None),
+    Token(EndOfFile, "", 1, None)
+  ])
+}
+
+pub fn unexpected_with_equal_equal_test() {
+  scan_tokens("((%@$==#))")
+  |> should.equal([
+    Token(LeftParen, "(", 1, None),
+    Token(LeftParen, "(", 1, None),
+    Token(Unexpected, "%", 1, None),
+    Token(Unexpected, "@", 1, None),
+    Token(Unexpected, "$", 1, None),
+    Token(EqualEqual, "==", 1, None),
+    Token(Unexpected, "#", 1, None),
+    Token(RightParen, ")", 1, None),
+    Token(RightParen, ")", 1, None),
+    Token(EndOfFile, "", 1, None)
+  ])
 }
