@@ -16,6 +16,10 @@ import internal/scanner.{
   EqualEqual,
   Bang,
   BangEqual,
+  Less,
+  LessEqual,
+  Greater,
+  GreaterEqual,
   EndOfFile,
   Unexpected,
   scan_tokens,
@@ -152,6 +156,17 @@ pub fn negation_and_equality_test() {
     Token(Bang, "!", 1, None),
     Token(BangEqual, "!=", 1, None),
     Token(EqualEqual, "==", 1, None),
+    Token(EndOfFile, "", 1, None)
+  ])
+}
+
+pub fn lte_gte_test() {
+  scan_tokens("<<=>>=")
+  |> should.equal([
+    Token(Less, "<", 1, None),
+    Token(LessEqual, "<=", 1, None),
+    Token(Greater, ">", 1, None),
+    Token(GreaterEqual, ">=", 1, None),
     Token(EndOfFile, "", 1, None)
   ])
 }
