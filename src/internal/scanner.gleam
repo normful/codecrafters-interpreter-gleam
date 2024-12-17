@@ -28,6 +28,7 @@ pub type TokenType {
   Greater
   GreaterEqual
   Slash
+  Whitespace
   EndOfFile
   Unexpected
 }
@@ -54,6 +55,7 @@ fn token_type_to_string(token_type: TokenType) -> String {
     GreaterEqual -> "GREATER_EQUAL"
     Slash -> "SLASH"
     EndOfFile -> "EOF"
+    Whitespace -> "whitespace token (not printed)"
     Unexpected -> "unexpected token"
   }
 }
@@ -85,6 +87,7 @@ pub fn print_tokens(tokens: Yielder(Token)) -> Nil {
         "[line " <> int.to_string(line_num) <>
           "] Error: Unexpected character: " <> lexeme)
       }
+      Token(token_type: Whitespace, ..) -> Nil
       _ -> {
         io.println(token_type_to_string(token.token_type) <> " " <>
           token.lexeme <> " " <>
@@ -112,6 +115,7 @@ fn map_single(grapheme: String, line_num: Int) -> Yielder(Token) {
       "!" -> Bang
       "=" -> Equal
       "/" -> Slash
+      " " | "\t" | "\n" | "\r" -> Whitespace
       _  -> Unexpected
     }
     Token(token_type: token_type, lexeme: grapheme, line: line_num, literal: None)

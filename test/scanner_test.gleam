@@ -21,6 +21,7 @@ import internal/scanner.{
   LessEqual,
   Greater,
   GreaterEqual,
+  Whitespace,
   EndOfFile,
   Unexpected,
   scan,
@@ -177,6 +178,18 @@ pub fn slash_test() {
   scan_test("/()", [
     Token(Slash, "/", 1, None),
     Token(LeftParen, "(", 1, None),
+    Token(RightParen, ")", 1, None),
+    Token(EndOfFile, "", 1, None)
+  ])
+}
+
+pub fn tab_newline_space_test() {
+  scan_test("(\r\t\n )", [
+    Token(LeftParen, "(", 1, None),
+    Token(Whitespace, "\r", 1, None),
+    Token(Whitespace, "\t", 1, None),
+    Token(Whitespace, "\n", 1, None),
+    Token(Whitespace, " ", 1, None),
     Token(RightParen, ")", 1, None),
     Token(EndOfFile, "", 1, None)
   ])
