@@ -164,3 +164,20 @@ pub fn lte_gte_test() {
     Token(EndOfFile, "", 1, None)
   ])
 }
+
+pub fn comment_test() {
+  scan_test("()// Comment", [
+    Token(LeftParen, "(", 1, None),
+    Token(RightParen, ")", 1, None),
+    Token(EndOfFile, "", 1, None)
+  ])
+}
+
+pub fn slash_test() {
+  scan_test("/()", [
+    Token(Slash, "/", 1, None),
+    Token(LeftParen, "(", 1, None),
+    Token(RightParen, ")", 1, None),
+    Token(EndOfFile, "", 1, None)
+  ])
+}

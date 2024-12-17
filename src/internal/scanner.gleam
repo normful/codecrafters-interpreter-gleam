@@ -18,7 +18,6 @@ pub type TokenType {
   Minus
   Plus
   Semicolon
-  Slash
   Star
   Equal
   EqualEqual
@@ -28,6 +27,7 @@ pub type TokenType {
   LessEqual
   Greater
   GreaterEqual
+  Slash
   EndOfFile
   Unexpected
 }
@@ -43,7 +43,6 @@ fn token_type_to_string(token_type: TokenType) -> String {
     Minus -> "MINUS"
     Plus -> "PLUS"
     Semicolon -> "SEMICOLON"
-    Slash -> "SLASH"
     Star -> "STAR"
     Equal -> "EQUAL"
     EqualEqual -> "EQUAL_EQUAL"
@@ -53,6 +52,7 @@ fn token_type_to_string(token_type: TokenType) -> String {
     LessEqual -> "LESS_EQUAL"
     Greater -> "GREATER"
     GreaterEqual -> "GREATER_EQUAL"
+    Slash -> "SLASH"
     EndOfFile -> "EOF"
     Unexpected -> "unexpected token"
   }
@@ -107,11 +107,11 @@ fn map_single(grapheme: String, line_num: Int) -> Yielder(Token) {
       "+" -> Plus
       ";" -> Semicolon
       "*" -> Star
-      "/" -> Slash
       "<" -> Less
       ">" -> Greater
       "!" -> Bang
       "=" -> Equal
+      "/" -> Slash
       _  -> Unexpected
     }
     Token(token_type: token_type, lexeme: grapheme, line: line_num, literal: None)
@@ -136,6 +136,22 @@ fn scan_loop(remaining: String, tokens: Yielder(Token), line_num: Int) -> Yielde
   let eof_token = yielder.once(fn() { Token(token_type: EndOfFile, lexeme: "", line: line_num, literal: None) })
 
   case string.pop_grapheme(remaining) {
+    Ok(#("/", tail_1)) -> case string.pop_grapheme(tail_1) {
+      Ok(#("/", tail_2)) -> case string.split_once(tail_2, on: "\n") {
+        Ok(#(_comment_text_head_2, tail_3)) -> scan_loop(tail_3, tokens, line_num + 1)
+        Error(Nil) -> tokens
+          |> yielder.append(eof_token)
+      }
+      Ok(#(_, _)) -> scan_loop(
+        tail_1,
+        tokens |> yielder.append(map_single("/", line_num)),
+        line_num
+      )
+      Error(Nil) -> tokens
+        |> yielder.append(map_single("/", line_num))
+        |> yielder.append(eof_token)
+    }
+
     Ok(#("!", tail_1)) -> case string.pop_grapheme(tail_1) {
       Ok(#("=", tail_2)) -> scan_loop(
         tail_2,
