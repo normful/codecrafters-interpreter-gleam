@@ -189,8 +189,17 @@ pub fn tab_newline_space_test() {
     Token(Whitespace, "\r", 1, None),
     Token(Whitespace, "\t", 1, None),
     Token(Whitespace, "\n", 1, None),
-    Token(Whitespace, " ", 1, None),
-    Token(RightParen, ")", 1, None),
-    Token(EndOfFile, "", 1, None)
+    Token(Whitespace, " ", 2, None),
+    Token(RightParen, ")", 2, None),
+    Token(EndOfFile, "", 2, None)
+  ])
+}
+
+pub fn multiline_lexical_errors_test() {
+  scan_test("#\n@", [
+    Token(Unexpected, "#", 1, None),
+    Token(Whitespace, "\n", 1, None),
+    Token(Unexpected, "@", 2, None),
+    Token(EndOfFile, "", 2, None)
   ])
 }

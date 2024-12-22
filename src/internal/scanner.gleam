@@ -133,11 +133,14 @@ fn map_double(grapheme_1: String, grapheme_2: String, line_num: Int) -> Yielder(
 }
 
 pub fn scan(contents: String) -> Yielder(Token) {
-  scan_loop(contents, yielder.empty(), 1)
+  let start_line_num = 1
+  scan_loop(contents, yielder.empty(), start_line_num)
 }
 
 fn scan_loop(remaining: String, tokens: Yielder(Token), line_num: Int) -> Yielder(Token) {
-  let eof_token = yielder.once(fn() { Token(token_type: EndOfFile, lexeme: "", line: line_num, literal: None) })
+  let eof_token = yielder.once(fn() {
+    Token(token_type: EndOfFile, lexeme: "", line: line_num, literal: None)
+  })
 
   case string.pop_grapheme(remaining) {
     Ok(#("/", tail_1)) -> case string.pop_grapheme(tail_1) {
@@ -216,6 +219,11 @@ fn scan_loop(remaining: String, tokens: Yielder(Token), line_num: Int) -> Yielde
         |> yielder.append(map_single("<", line_num))
         |> yielder.append(eof_token)
     }
+    Ok(#("\n", tail_1)) -> scan_loop(
+      tail_1,
+      tokens |> yielder.append(map_single("\n", line_num)),
+      line_num + 1
+    )
     Ok(#(head_1, tail_1)) -> scan_loop(
       tail_1,
       tokens |> yielder.append(map_single(head_1, line_num)),
