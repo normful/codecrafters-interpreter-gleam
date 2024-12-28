@@ -3,6 +3,7 @@ import gleam/int
 import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/regexp
 import gleam/result
 import gleam/string
 import gleam/yielder.{type Yielder}
@@ -470,10 +471,8 @@ fn split_num_loop(
 }
 
 fn is_digit(grapheme: String) -> Bool {
-  case grapheme {
-    "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" -> True
-    _ -> False
-  }
+  let assert Ok(re) = regexp.from_string("^[0-9]")
+  regexp.check(with: re, content: grapheme)
 }
 
 fn is_dot(grapheme: String) -> Bool {
