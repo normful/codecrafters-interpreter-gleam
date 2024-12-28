@@ -1,7 +1,9 @@
+import gleam/float
 import gleam/int
 import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/result
 import gleam/string
 import gleam/yielder.{type Yielder}
 
@@ -38,6 +40,7 @@ pub type TokenType {
 
   String
   UnterminatedString
+  Number
 
   Whitespace
 
@@ -68,6 +71,7 @@ fn token_type_to_stdout_string(token_type: TokenType) -> String {
     GreaterEqual -> "GREATER_EQUAL"
     Slash -> "SLASH"
     String -> "STRING"
+    Number -> "NUMBER"
     EndOfFile -> "EOF"
 
     // Tokens not printed to stdout
@@ -87,12 +91,13 @@ pub fn is_bad_token(token: Token) -> Bool {
 
 pub type Literal {
   StringLiteral(String)
-  NumberLiteral
+  NumberLiteral(Float)
 }
 
 fn token_literal_to_string(lit: Option(Literal)) -> String {
   case lit {
     Some(StringLiteral(text)) -> text
+    Some(NumberLiteral(num)) -> float.to_string(num)
     None -> "null"
   }
 }
@@ -387,11 +392,26 @@ fn scan_loop(
 
     // All other single characters
     Ok(#(head_1, tail_1)) ->
-      scan_loop(
-        tail_1,
-        tokens |> yielder.append(map_single(head_1, line_num)),
-        line_num,
-      )
+      case is_digit(head_1) {
+        True -> {
+          case extract_number_token(head_1 <> tail_1, line_num) {
+            Ok(#(number_token, tail_2)) ->
+              scan_loop(
+                tail_2,
+                tokens |> yielder.append(yielder.once(fn() { number_token })),
+                line_num,
+              )
+            Error(Nil) -> scan_loop(tail_1, tokens, line_num)
+          }
+        }
+
+        False ->
+          scan_loop(
+            tail_1,
+            tokens |> yielder.append(map_single(head_1, line_num)),
+            line_num,
+          )
+      }
 
     // No more graphemes to scan
     Error(Nil) -> tokens |> yielder.append(eof_token)
@@ -400,4 +420,62 @@ fn scan_loop(
 
 fn newline_char_count(text: String) -> Int {
   string.to_graphemes(text) |> list.count(fn(g) { g == "\n" })
+}
+
+pub fn extract_number_token(
+  text: String,
+  line_num: Int,
+) -> Result(#(Token, String), Nil) {
+  let #(number_string, rest) = split_number_string_from_rest(text)
+
+  let number_float = case int.parse(number_string), float.parse(number_string) {
+    Ok(i), Error(Nil) -> Ok(int.to_float(i))
+    Error(Nil), Ok(f) -> Ok(f)
+    _, _ -> Error(Nil)
+  }
+
+  number_float
+  |> result.map(fn(num_float) {
+    #(
+      Token(
+        token_type: Number,
+        lexeme: number_string,
+        line: line_num,
+        literal: Some(NumberLiteral(num_float)),
+      ),
+      rest,
+    )
+  })
+}
+
+fn split_number_string_from_rest(text: String) -> #(String, String) {
+  split_num_loop(text, False, "")
+}
+
+fn split_num_loop(
+  remaining: String,
+  saw_dot: Bool,
+  num_accum: String,
+) -> #(String, String) {
+  case string.pop_grapheme(remaining) {
+    Ok(#(head, tail)) ->
+      case saw_dot, is_digit(head), is_dot(head) {
+        False, True, False -> split_num_loop(tail, False, num_accum <> head)
+        False, False, True | True, True, False ->
+          split_num_loop(tail, True, num_accum <> head)
+        _, _, _ -> #(num_accum, remaining)
+      }
+    Error(Nil) -> #(num_accum, "")
+  }
+}
+
+fn is_digit(grapheme: String) -> Bool {
+  case grapheme {
+    "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" -> True
+    _ -> False
+  }
+}
+
+fn is_dot(grapheme: String) -> Bool {
+  grapheme == "."
 }

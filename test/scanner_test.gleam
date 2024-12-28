@@ -1,5 +1,4 @@
 import gleam/option.{None, Some}
-import gleam/result
 import gleam/yielder
 import gleeunit/should
 import internal/scanner.{
@@ -213,6 +212,63 @@ pub fn valid_and_unterminated_string_test() {
     Token(String, "\"hello\"", 1, Some(StringLiteral("hello"))),
     Token(Whitespace, " ", 1, None),
     Token(UnterminatedString, "unterminated", 1, None),
-    Token(EndOfFile, "", 1, None)
+    Token(EndOfFile, "", 1, None),
+  ])
+}
+
+const dummy_line_number = 7
+
+pub fn extract_number_token_1_test() {
+  extract_number_token("124abc", dummy_line_number)
+  |> should.be_ok
+  |> should.equal(#(
+    Token(Number, "124", dummy_line_number, Some(NumberLiteral(124.0))),
+    "abc",
+  ))
+}
+
+pub fn number_literal_1_test() {
+  scan_test("12", [
+    Token(Number, "12", 1, Some(NumberLiteral(12.0))),
+    Token(EndOfFile, "", 1, None),
+  ])
+}
+
+pub fn number_literal_2_test() {
+  scan_test("0.0", [
+    Token(Number, "0.0", 1, Some(NumberLiteral(0.0))),
+    Token(EndOfFile, "", 1, None),
+  ])
+}
+
+pub fn number_literal_3_test() {
+  scan_test("005125", [
+    Token(Number, "005125", 1, Some(NumberLiteral(5125.0))),
+    Token(EndOfFile, "", 1, None),
+  ])
+}
+
+pub fn number_literal_4_test() {
+  scan_test("0123456789.1234567890", [
+    Token(
+      Number,
+      "0123456789.1234567890",
+      1,
+      Some(NumberLiteral(123_456_789.123456789)),
+    ),
+    Token(EndOfFile, "", 1, None),
+  ])
+}
+
+pub fn number_expressions_1_test() {
+  scan_test("(44+25)>31", [
+    Token(LeftParen, "(", 1, None),
+    Token(Number, "44", 1, Some(NumberLiteral(44.0))),
+    Token(Plus, "+", 1, None),
+    Token(Number, "25", 1, Some(NumberLiteral(25.0))),
+    Token(RightParen, ")", 1, None),
+    Token(Greater, ">", 1, None),
+    Token(Number, "31", 1, Some(NumberLiteral(31.0))),
+    Token(EndOfFile, "", 1, None),
   ])
 }
