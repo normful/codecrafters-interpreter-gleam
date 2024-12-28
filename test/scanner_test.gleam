@@ -2,10 +2,12 @@ import gleam/option.{None, Some}
 import gleam/yielder
 import gleeunit/should
 import internal/scanner.{
-  type Token, Bang, BangEqual, Comma, Dot, EndOfFile, Equal, EqualEqual, Greater,
-  GreaterEqual, Identifier, LeftBrace, LeftParen, Less, LessEqual, Minus, Number,
-  NumberLiteral, Plus, RightBrace, RightParen, Semicolon, Slash, Star, String,
-  StringLiteral, Token, Unexpected, UnterminatedString, Whitespace,
+  type Token, AndTok, Bang, BangEqual, ClassTok, Comma, Dot, ElseTok, EndOfFile,
+  Equal, EqualEqual, FalseTok, ForTok, FunTok, Greater, GreaterEqual, Identifier,
+  IfTok, LeftBrace, LeftParen, Less, LessEqual, Minus, NilTok, Number,
+  NumberLiteral, OrTok, Plus, PrintTok, ReturnTok, RightBrace, RightParen,
+  Semicolon, Slash, Star, String, StringLiteral, SuperTok, ThisTok, Token,
+  TrueTok, Unexpected, UnterminatedString, VarTok, WhileTok, Whitespace,
   extract_number_token, is_alpha_underscore, is_bad_token, scan,
 }
 
@@ -292,4 +294,44 @@ pub fn identifier_1_test() {
     Token(Identifier, "_hello", 1, None),
     Token(EndOfFile, "", 1, None),
   ])
+}
+
+pub fn reserved_word_1_test() {
+  scan_test(
+    "and class else false for fun if nil or print return super this true var while",
+    [
+      Token(AndTok, "and", 1, None),
+      Token(Whitespace, " ", 1, None),
+      Token(ClassTok, "class", 1, None),
+      Token(Whitespace, " ", 1, None),
+      Token(ElseTok, "else", 1, None),
+      Token(Whitespace, " ", 1, None),
+      Token(FalseTok, "false", 1, None),
+      Token(Whitespace, " ", 1, None),
+      Token(ForTok, "for", 1, None),
+      Token(Whitespace, " ", 1, None),
+      Token(FunTok, "fun", 1, None),
+      Token(Whitespace, " ", 1, None),
+      Token(IfTok, "if", 1, None),
+      Token(Whitespace, " ", 1, None),
+      Token(NilTok, "nil", 1, None),
+      Token(Whitespace, " ", 1, None),
+      Token(OrTok, "or", 1, None),
+      Token(Whitespace, " ", 1, None),
+      Token(PrintTok, "print", 1, None),
+      Token(Whitespace, " ", 1, None),
+      Token(ReturnTok, "return", 1, None),
+      Token(Whitespace, " ", 1, None),
+      Token(SuperTok, "super", 1, None),
+      Token(Whitespace, " ", 1, None),
+      Token(ThisTok, "this", 1, None),
+      Token(Whitespace, " ", 1, None),
+      Token(TrueTok, "true", 1, None),
+      Token(Whitespace, " ", 1, None),
+      Token(VarTok, "var", 1, None),
+      Token(Whitespace, " ", 1, None),
+      Token(WhileTok, "while", 1, None),
+      Token(EndOfFile, "", 1, None),
+    ],
+  )
 }

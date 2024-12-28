@@ -1,3 +1,4 @@
+import gleam/dict
 import gleam/float
 import gleam/int
 import gleam/io
@@ -546,16 +547,32 @@ pub fn extract_identifier_or_reserved_word(
   line_num: Int,
 ) -> Result(#(Token, String), Nil) {
   let #(identifier, rest) = split_identifier_from_rest(text)
+  let reserved_words =
+    dict.from_list([
+      #("and", AndTok),
+      #("class", ClassTok),
+      #("else", ElseTok),
+      #("false", FalseTok),
+      #("fun", FunTok),
+      #("for", ForTok),
+      #("if", IfTok),
+      #("nil", NilTok),
+      #("or", OrTok),
+      #("print", PrintTok),
+      #("return", ReturnTok),
+      #("super", SuperTok),
+      #("this", ThisTok),
+      #("true", TrueTok),
+      #("var", VarTok),
+      #("while", WhileTok),
+    ])
 
-  Ok(#(
-    Token(
-      token_type: Identifier,
-      lexeme: identifier,
-      line: line_num,
-      literal: None,
-    ),
-    rest,
-  ))
+  let token_type = case dict.get(reserved_words, identifier) {
+    Ok(token_type_value) -> token_type_value
+    Error(Nil) -> Identifier
+  }
+
+  Ok(#(Token(token_type, identifier, line_num, None), rest))
 }
 
 fn split_identifier_from_rest(text: String) -> #(String, String) {
