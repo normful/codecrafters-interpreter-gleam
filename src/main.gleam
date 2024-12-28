@@ -14,7 +14,7 @@ pub fn main() {
         Ok(contents) -> {
           let tokens = scanner.scan(contents)
           scanner.print_tokens(tokens)
-          case tokens |> yielder.any(scanner.is_unexpected_token) {
+          case tokens |> yielder.any(scanner.is_bad_token) {
             True -> exit(65)
             False -> exit(0)
           }

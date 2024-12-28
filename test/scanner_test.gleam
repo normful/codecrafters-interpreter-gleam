@@ -22,13 +22,16 @@ import internal/scanner.{
   Greater,
   GreaterEqual,
   Whitespace,
+  String,
+  StringLiteral,
+  UnterminatedString,
   EndOfFile,
   Unexpected,
   scan,
-  is_unexpected_token,
+  is_bad_token,
 }
 import gleam/yielder
-import gleam/option.{None}
+import gleam/option.{Some, None}
 
 fn scan_test(lox_file_contents: String, expected: List(Token)) -> Nil {
   scan(lox_file_contents)
@@ -36,9 +39,10 @@ fn scan_test(lox_file_contents: String, expected: List(Token)) -> Nil {
   |> should.equal(expected)
 }
 
-pub fn is_unexpected_token_test() {
-  is_unexpected_token(Token(Unexpected, "@", 1, None)) |> should.be_true
-  is_unexpected_token(Token(EndOfFile, "", 1, None)) |> should.be_false
+pub fn is_bad_token_test() {
+  is_bad_token(Token(Unexpected, "@", 1, None)) |> should.be_true
+  is_bad_token(Token(UnterminatedString, "foo", 1, None)) |> should.be_true
+  is_bad_token(Token(EndOfFile, "", 1, None)) |> should.be_false
 }
 
 pub fn unexpected_lexeme_test() {
@@ -201,5 +205,42 @@ pub fn multiline_lexical_errors_test() {
     Token(Whitespace, "\n", 1, None),
     Token(Unexpected, "@", 2, None),
     Token(EndOfFile, "", 2, None)
+  ])
+}
+
+pub fn valid_string_literal_test() {
+  scan_test("\"ab cd\"", [
+    Token(String, "\"ab cd\"", 1, Some(StringLiteral("ab cd"))),
+    Token(EndOfFile, "", 1, None)
+  ])
+}
+
+pub fn valid_two_line_string_literal_test() {
+  scan_test("\"ab\ncd\"", [
+    Token(String, "\"ab\ncd\"", 1, Some(StringLiteral("ab\ncd"))),
+    Token(EndOfFile, "", 2, None)
+  ])
+}
+
+pub fn valid_three_line_string_literal_test() {
+  scan_test("\"a b\nc \n d\"", [
+    Token(String, "\"a b\nc \n d\"", 1, Some(StringLiteral("a b\nc \n d"))),
+    Token(EndOfFile, "", 3, None)
+  ])
+}
+
+pub fn unterminated_string_literal_test() {
+  scan_test("\"ab", [
+    Token(UnterminatedString, "ab", 1, None),
+    Token(EndOfFile, "", 1, None)
+  ])
+}
+
+pub fn valid_and_unterminated_string_test() {
+  scan_test("\"hello\" \"unterminated", [
+    Token(String, "\"hello\"", 1, Some(StringLiteral("hello"))),
+    Token(Whitespace, " ", 1, None),
+    Token(UnterminatedString, "unterminated", 1, None),
+    Token(EndOfFile, "", 1, None)
   ])
 }

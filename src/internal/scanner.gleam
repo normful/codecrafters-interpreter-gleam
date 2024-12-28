@@ -1,8 +1,9 @@
-import gleam/option.{type Option, None}
+import gleam/option.{type Option, None, Some}
 import gleam/io
 import gleam/string
 import gleam/int
 import gleam/yielder.{type Yielder}
+import gleam/list
 
 pub type Token {
   Token(token_type: TokenType, lexeme: String, line: Int, literal: Option(Literal))
@@ -27,7 +28,7 @@ pub type TokenType {
   EndOfFile
 }
 
-fn token_type_to_string(token_type: TokenType) -> String {
+fn token_type_to_stdout_string(token_type: TokenType) -> String {
   case token_type {
     LeftParen -> "LEFT_PAREN"
     RightParen -> "RIGHT_PAREN"
@@ -48,30 +49,34 @@ fn token_type_to_string(token_type: TokenType) -> String {
     Greater -> "GREATER"
     GreaterEqual -> "GREATER_EQUAL"
     Slash -> "SLASH"
+    String -> "STRING"
     EndOfFile -> "EOF"
 
     // Tokens not printed to stdout
     Unexpected -> "unexpected token"
     Whitespace -> "whitespace token"
+    UnterminatedString -> "unterminated string"
   }
 }
 
-pub fn is_unexpected_token(token: Token) -> Bool {
+pub fn is_bad_token(token: Token) -> Bool {
   case token {
     Token(token_type: Unexpected, ..) -> True
+    Token(token_type: UnterminatedString, ..) -> True
     _ -> False
   }
 }
 
 pub type Literal {
-  StringLiteral
+  StringLiteral(String)
   NumberLiteral
 }
 
 fn token_literal_to_string(lit: Option(Literal)) -> String {
   case lit {
     None -> "null"
-    _ -> "TODO(norman): other token literals as a string"
+    Some(StringLiteral(text)) -> text
+    _ -> "TODO"
   }
 }
 
@@ -84,8 +89,13 @@ pub fn print_tokens(tokens: Yielder(Token)) -> Nil {
           "] Error: Unexpected character: " <> lexeme)
       }
       Token(token_type: Whitespace, ..) -> Nil
+      Token(token_type: UnterminatedString, line: line_num, ..) -> {
+        io.println_error(
+        "[line " <> int.to_string(line_num) <>
+          "] Error: Unterminated string.")
+      }
       _ -> {
-        io.println(token_type_to_string(token.token_type) <> " " <>
+        io.println(token_type_to_stdout_string(token.token_type) <> " " <>
           token.lexeme <> " " <>
           token_literal_to_string(token.literal))
       }
@@ -250,6 +260,30 @@ fn scan_loop(remaining: String, tokens: Yielder(Token), line_num: Int) -> Yielde
         |> yielder.append(map_single("<", line_num))
         |> yielder.append(eof_token)
     }
+
+    // Beginning of a String or UnterminatedString
+    Ok(#("\"", tail_1)) -> case string.split_once(tail_1, on: "\"") {
+      Ok(#(text_between_quotes, tail_2)) -> {
+        let newline_count = newline_char_count(text_between_quotes)
+
+        scan_loop(
+        tail_2,
+        tokens |>
+        yielder.append(yielder.from_list([
+          Token(String, 
+          "\"" <> text_between_quotes <> "\"", 
+          line_num, 
+          Some(StringLiteral(text_between_quotes)))
+        ])),
+        line_num + newline_count)
+      }
+      Error(Nil) -> 
+        tokens 
+        |> yielder.append(yielder.from_list([Token(UnterminatedString, tail_1, line_num, None)])) 
+        |> yielder.append(eof_token)
+    }
+
+    // New-line character
     Ok(#("\n", tail_1)) -> scan_loop(
       tail_1,
       tokens |> yielder.append(map_single("\n", line_num)),
@@ -266,4 +300,8 @@ fn scan_loop(remaining: String, tokens: Yielder(Token), line_num: Int) -> Yielde
     // No more graphemes to scan
     Error(Nil) -> tokens |> yielder.append(eof_token)
   }
+}
+
+fn newline_char_count(text: String) -> Int {
+  string.to_graphemes(text) |> list.count(fn(g) { g == "\n" })
 }
