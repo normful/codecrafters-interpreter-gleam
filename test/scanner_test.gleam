@@ -1,37 +1,14 @@
+import gleam/option.{None, Some}
+import gleam/result
+import gleam/yielder
 import gleeunit/should
 import internal/scanner.{
-  type Token,
-  Token,
-  LeftParen,
-  RightParen,
-  LeftBrace,
-  RightBrace,
-  Comma,
-  Dot,
-  Minus,
-  Plus,
-  Semicolon,
-  Slash,
-  Star,
-  Equal,
-  EqualEqual,
-  Bang,
-  BangEqual,
-  Less,
-  LessEqual,
-  Greater,
-  GreaterEqual,
-  Whitespace,
-  String,
-  StringLiteral,
-  UnterminatedString,
-  EndOfFile,
-  Unexpected,
-  scan,
-  is_bad_token,
+  type Token, Bang, BangEqual, Comma, Dot, EndOfFile, Equal, EqualEqual, Greater,
+  GreaterEqual, LeftBrace, LeftParen, Less, LessEqual, Minus, Number,
+  NumberLiteral, Plus, RightBrace, RightParen, Semicolon, Slash, Star, String,
+  StringLiteral, Token, Unexpected, UnterminatedString, Whitespace,
+  extract_number_token, is_bad_token, scan,
 }
-import gleam/yielder
-import gleam/option.{Some, None}
 
 fn scan_test(lox_file_contents: String, expected: List(Token)) -> Nil {
   scan(lox_file_contents)
@@ -53,16 +30,11 @@ pub fn unexpected_lexeme_test() {
 }
 
 pub fn empty_string_test() {
-  scan_test("", [
-    Token(EndOfFile, "", 1, None)
-  ])
+  scan_test("", [Token(EndOfFile, "", 1, None)])
 }
 
 pub fn one_left_paren_test() {
-  scan_test("(", [
-    Token(LeftParen, "(", 1, None),
-    Token(EndOfFile, "", 1, None)
-  ])
+  scan_test("(", [Token(LeftParen, "(", 1, None), Token(EndOfFile, "", 1, None)])
 }
 
 pub fn two_left_parens_test() {
@@ -116,7 +88,7 @@ pub fn punctuation2_test() {
 pub fn equal_equal_test() {
   scan_test("==", [
     Token(EqualEqual, "==", 1, None),
-    Token(EndOfFile, "", 1, None)
+    Token(EndOfFile, "", 1, None),
   ])
 }
 
@@ -124,7 +96,7 @@ pub fn equal_equal_equal_test() {
   scan_test("===", [
     Token(EqualEqual, "==", 1, None),
     Token(Equal, "=", 1, None),
-    Token(EndOfFile, "", 1, None)
+    Token(EndOfFile, "", 1, None),
   ])
 }
 
@@ -132,7 +104,7 @@ pub fn equal_equal_equal_equal_test() {
   scan_test("====", [
     Token(EqualEqual, "==", 1, None),
     Token(EqualEqual, "==", 1, None),
-    Token(EndOfFile, "", 1, None)
+    Token(EndOfFile, "", 1, None),
   ])
 }
 
@@ -147,7 +119,7 @@ pub fn unexpected_with_equal_equal_test() {
     Token(Unexpected, "#", 1, None),
     Token(RightParen, ")", 1, None),
     Token(RightParen, ")", 1, None),
-    Token(EndOfFile, "", 1, None)
+    Token(EndOfFile, "", 1, None),
   ])
 }
 
@@ -156,7 +128,7 @@ pub fn negation_and_equality_test() {
     Token(Bang, "!", 1, None),
     Token(BangEqual, "!=", 1, None),
     Token(EqualEqual, "==", 1, None),
-    Token(EndOfFile, "", 1, None)
+    Token(EndOfFile, "", 1, None),
   ])
 }
 
@@ -166,7 +138,7 @@ pub fn lte_gte_test() {
     Token(LessEqual, "<=", 1, None),
     Token(Greater, ">", 1, None),
     Token(GreaterEqual, ">=", 1, None),
-    Token(EndOfFile, "", 1, None)
+    Token(EndOfFile, "", 1, None),
   ])
 }
 
@@ -174,7 +146,7 @@ pub fn comment_test() {
   scan_test("()// Comment", [
     Token(LeftParen, "(", 1, None),
     Token(RightParen, ")", 1, None),
-    Token(EndOfFile, "", 1, None)
+    Token(EndOfFile, "", 1, None),
   ])
 }
 
@@ -183,7 +155,7 @@ pub fn slash_test() {
     Token(Slash, "/", 1, None),
     Token(LeftParen, "(", 1, None),
     Token(RightParen, ")", 1, None),
-    Token(EndOfFile, "", 1, None)
+    Token(EndOfFile, "", 1, None),
   ])
 }
 
@@ -195,7 +167,7 @@ pub fn tab_newline_space_test() {
     Token(Whitespace, "\n", 1, None),
     Token(Whitespace, " ", 2, None),
     Token(RightParen, ")", 2, None),
-    Token(EndOfFile, "", 2, None)
+    Token(EndOfFile, "", 2, None),
   ])
 }
 
@@ -204,35 +176,35 @@ pub fn multiline_lexical_errors_test() {
     Token(Unexpected, "#", 1, None),
     Token(Whitespace, "\n", 1, None),
     Token(Unexpected, "@", 2, None),
-    Token(EndOfFile, "", 2, None)
+    Token(EndOfFile, "", 2, None),
   ])
 }
 
 pub fn valid_string_literal_test() {
   scan_test("\"ab cd\"", [
     Token(String, "\"ab cd\"", 1, Some(StringLiteral("ab cd"))),
-    Token(EndOfFile, "", 1, None)
+    Token(EndOfFile, "", 1, None),
   ])
 }
 
 pub fn valid_two_line_string_literal_test() {
   scan_test("\"ab\ncd\"", [
     Token(String, "\"ab\ncd\"", 1, Some(StringLiteral("ab\ncd"))),
-    Token(EndOfFile, "", 2, None)
+    Token(EndOfFile, "", 2, None),
   ])
 }
 
 pub fn valid_three_line_string_literal_test() {
   scan_test("\"a b\nc \n d\"", [
     Token(String, "\"a b\nc \n d\"", 1, Some(StringLiteral("a b\nc \n d"))),
-    Token(EndOfFile, "", 3, None)
+    Token(EndOfFile, "", 3, None),
   ])
 }
 
 pub fn unterminated_string_literal_test() {
   scan_test("\"ab", [
     Token(UnterminatedString, "ab", 1, None),
-    Token(EndOfFile, "", 1, None)
+    Token(EndOfFile, "", 1, None),
   ])
 }
 

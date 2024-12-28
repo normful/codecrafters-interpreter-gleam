@@ -92,9 +92,8 @@ pub type Literal {
 
 fn token_literal_to_string(lit: Option(Literal)) -> String {
   case lit {
-    None -> "null"
     Some(StringLiteral(text)) -> text
-    _ -> "TODO"
+    None -> "null"
   }
 }
 
@@ -346,12 +345,12 @@ fn scan_loop(
           |> yielder.append(eof_token)
       }
 
-    // Beginning of a String or UnterminatedString
+    // Either:
+    // String
+    // UnterminatedString
     Ok(#("\"", tail_1)) ->
       case string.split_once(tail_1, on: "\"") {
         Ok(#(text_between_quotes, tail_2)) -> {
-          let newline_count = newline_char_count(text_between_quotes)
-
           scan_loop(
             tail_2,
             tokens
@@ -365,7 +364,7 @@ fn scan_loop(
                   ),
                 ]),
               ),
-            line_num + newline_count,
+            line_num + newline_char_count(text_between_quotes),
           )
         }
         Error(Nil) ->
@@ -378,7 +377,7 @@ fn scan_loop(
           |> yielder.append(eof_token)
       }
 
-    // New-line character
+    // Newline character
     Ok(#("\n", tail_1)) ->
       scan_loop(
         tail_1,
