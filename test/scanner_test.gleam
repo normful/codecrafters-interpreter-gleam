@@ -3,10 +3,10 @@ import gleam/yielder
 import gleeunit/should
 import internal/scanner.{
   type Token, Bang, BangEqual, Comma, Dot, EndOfFile, Equal, EqualEqual, Greater,
-  GreaterEqual, LeftBrace, LeftParen, Less, LessEqual, Minus, Number,
+  GreaterEqual, Identifier, LeftBrace, LeftParen, Less, LessEqual, Minus, Number,
   NumberLiteral, Plus, RightBrace, RightParen, Semicolon, Slash, Star, String,
   StringLiteral, Token, Unexpected, UnterminatedString, Whitespace,
-  extract_number_token, is_bad_token, scan,
+  extract_number_token, is_alpha_underscore, is_bad_token, scan,
 }
 
 fn scan_test(lox_file_contents: String, expected: List(Token)) -> Nil {
@@ -269,6 +269,27 @@ pub fn number_expressions_1_test() {
     Token(RightParen, ")", 1, None),
     Token(Greater, ">", 1, None),
     Token(Number, "31", 1, Some(NumberLiteral(31.0))),
+    Token(EndOfFile, "", 1, None),
+  ])
+}
+
+pub fn is_alpha_underscore_1_test() {
+  is_alpha_underscore("A") |> should.be_true
+  is_alpha_underscore("z") |> should.be_true
+  is_alpha_underscore("a") |> should.be_true
+  is_alpha_underscore("_") |> should.be_true
+  is_alpha_underscore("0") |> should.be_false
+  is_alpha_underscore("1") |> should.be_false
+  is_alpha_underscore("'") |> should.be_false
+}
+
+pub fn identifier_1_test() {
+  scan_test("foo bar _hello", [
+    Token(Identifier, "foo", 1, None),
+    Token(Whitespace, " ", 1, None),
+    Token(Identifier, "bar", 1, None),
+    Token(Whitespace, " ", 1, None),
+    Token(Identifier, "_hello", 1, None),
     Token(EndOfFile, "", 1, None),
   ])
 }

@@ -42,6 +42,24 @@ pub type TokenType {
   String
   UnterminatedString
   Number
+  Identifier
+
+  AndTok
+  ClassTok
+  ElseTok
+  FalseTok
+  FunTok
+  ForTok
+  IfTok
+  NilTok
+  OrTok
+  PrintTok
+  ReturnTok
+  SuperTok
+  ThisTok
+  TrueTok
+  VarTok
+  WhileTok
 
   Whitespace
 
@@ -73,6 +91,23 @@ fn token_type_to_stdout_string(token_type: TokenType) -> String {
     Slash -> "SLASH"
     String -> "STRING"
     Number -> "NUMBER"
+    Identifier -> "IDENTIFIER"
+    AndTok -> "AND"
+    ClassTok -> "CLASS"
+    ElseTok -> "ELSE"
+    FalseTok -> "FALSE"
+    FunTok -> "FUN"
+    ForTok -> "FOR"
+    IfTok -> "IF"
+    NilTok -> "NIL"
+    OrTok -> "OR"
+    PrintTok -> "PRINT"
+    ReturnTok -> "RETURN"
+    SuperTok -> "SUPER"
+    ThisTok -> "THIS"
+    TrueTok -> "TRUE"
+    VarTok -> "VAR"
+    WhileTok -> "WHILE"
     EndOfFile -> "EOF"
 
     // Tokens not printed to stdout
@@ -407,11 +442,28 @@ fn scan_loop(
         }
 
         False ->
-          scan_loop(
-            tail_1,
-            tokens |> yielder.append(map_single(head_1, line_num)),
-            line_num,
-          )
+          case is_alpha_underscore(head_1) {
+            True ->
+              case
+                extract_identifier_or_reserved_word(head_1 <> tail_1, line_num)
+              {
+                Ok(#(extracted_token, tail_2)) ->
+                  scan_loop(
+                    tail_2,
+                    tokens
+                      |> yielder.append(yielder.once(fn() { extracted_token })),
+                    line_num,
+                  )
+                Error(Nil) -> scan_loop(tail_1, tokens, line_num)
+              }
+
+            False ->
+              scan_loop(
+                tail_1,
+                tokens |> yielder.append(map_single(head_1, line_num)),
+                line_num,
+              )
+          }
       }
 
     // No more graphemes to scan
@@ -475,6 +527,51 @@ fn is_digit(grapheme: String) -> Bool {
   regexp.check(with: re, content: grapheme)
 }
 
+pub fn is_alpha_underscore(grapheme: String) -> Bool {
+  let assert Ok(re) = regexp.from_string("^[A-Za-z_]")
+  regexp.check(with: re, content: grapheme)
+}
+
+pub fn is_alpha_underscore_digit(grapheme: String) -> Bool {
+  let assert Ok(re) = regexp.from_string("^[A-Za-z0-9_]")
+  regexp.check(with: re, content: grapheme)
+}
+
 fn is_dot(grapheme: String) -> Bool {
   grapheme == "."
+}
+
+pub fn extract_identifier_or_reserved_word(
+  text: String,
+  line_num: Int,
+) -> Result(#(Token, String), Nil) {
+  let #(identifier, rest) = split_identifier_from_rest(text)
+
+  Ok(#(
+    Token(
+      token_type: Identifier,
+      lexeme: identifier,
+      line: line_num,
+      literal: None,
+    ),
+    rest,
+  ))
+}
+
+fn split_identifier_from_rest(text: String) -> #(String, String) {
+  split_identifier_loop(text, "")
+}
+
+fn split_identifier_loop(
+  remaining: String,
+  id_accum: String,
+) -> #(String, String) {
+  case string.pop_grapheme(remaining) {
+    Ok(#(head, tail)) ->
+      case is_alpha_underscore_digit(head) {
+        True -> split_identifier_loop(tail, id_accum <> head)
+        False -> #(id_accum, remaining)
+      }
+    Error(Nil) -> #(id_accum, "")
+  }
 }
